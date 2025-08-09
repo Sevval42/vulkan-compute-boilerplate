@@ -5,6 +5,8 @@
 #include "vulkan_base/vulkan_base.h"
 
 VulkanContext* context;
+VulkanDescriptorSet* descriptorSetInfo;
+VulkanPipeline pipeline;
 
 
 void initApplication() {
@@ -26,12 +28,27 @@ void initApplication() {
         deviceExtensionsCount, 
         deviceExtensions
     );
+
+    descriptorSetInfo = initDescriptorSet();
+
+    addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    createDescriptorSet(context, descriptorSetInfo);
+
+    std::vector<const char*> computeShaders;
+    computeShaders.push_back("../shaders/test.spv");
+
+    pipeline = createPipeline(context, computeShaders, descriptorSetInfo);
+
+    // fillDescriptorSet(context, descriptorSetInfo, ...);
+
+
 }
 
 void shutdownApplication() {
     vkDeviceWaitIdle(context->device);
     
-    
+    destroyPipeline(context, &pipeline);
+    destroyDescriptorSet(context, descriptorSetInfo);
     
     exitVulkan(context);
 }

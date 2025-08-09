@@ -9,6 +9,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(SOURCE_FILES 
     src/main.cpp 
     src/vulkan_base/vulkan_device.cpp
+    src/vulkan_base/vulkan_pipeline.cpp
+    src/vulkan_base/vulkan_descriptor_set.cpp
 )
 
 include(FetchContent)

@@ -1,4 +1,7 @@
+#include "vulkan/vulkan_core.h"
 #include <vulkan/vulkan.h>
+#include <vector>
+#include <unordered_map>
 
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]));
 
@@ -7,8 +10,17 @@ struct VulkanQueue {
     uint32_t familyIndex;
 };
 
+struct VulkanDescriptorSet {
+    uint32_t layoutCount;
+    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+    VkDescriptorSetLayout descriptorSetLayout;
+    std::unordered_map<VkDescriptorType, uint32_t> descriptorTypeCount;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
+};
+
 struct VulkanPipeline {
-    VkPipeline pipeline;
+    std::vector<VkPipeline> pipelines;
     VkPipelineLayout pipelineLayout;
 };
 
@@ -26,5 +38,11 @@ void exitVulkan(VulkanContext* context);
 VkRenderPass createRenderPass(VulkanContext* context, VkFormat format);
 void destroyRenderPass(VulkanContext* context, VkRenderPass renderPass);
 
-VulkanPipeline createPipeline(VulkanContext* context, const char* vertextShaderFilename, const char* fragmentShaderFilename, VkRenderPass renderPass, uint32_t width, uint32_t height);
+VulkanDescriptorSet* initDescriptorSet();
+void addDescriptorSetLayout(VulkanDescriptorSet* descriptorSet, VkDescriptorType descriptorType);
+void createDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptorSet);
+void fillDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptorSet, std::vector<void*>& buffers);
+void destroyDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptorSet);
+
+VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> computeShaderFilenames, VulkanDescriptorSet* descriptorSet);
 void destroyPipeline(VulkanContext* context, VulkanPipeline* pipeline);
