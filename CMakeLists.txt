@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(SOURCE_FILES 
-    src/main.cpp
+    src/main.cpp 
+    src/vulkan_base/vulkan_device.cpp
 )
 
 include(FetchContent)
