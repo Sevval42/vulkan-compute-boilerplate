@@ -1,3 +1,4 @@
+#include "vulkan/vulkan_core.h"
 #include "vulkan_base.h"
 #include <iostream>
 
@@ -83,22 +84,20 @@ bool createLogicalDevice(VulkanContext* context, uint32_t deviceExtensionCount, 
     VkQueueFamilyProperties* queueFamilies = new VkQueueFamilyProperties[numQueueFamilies];
     vkGetPhysicalDeviceQueueFamilyProperties(context->physicalDevice, &numQueueFamilies, queueFamilies);
 
-    uint32_t graphicsQueueIndex = 0;
+    uint32_t computeQueueIndex = 0;
     for(uint32_t i = 0; i < numQueueFamilies; ++i) {
         VkQueueFamilyProperties queueFamily = queueFamilies[i];
-        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
             if(queueFamily.queueCount > 0) {
-                graphicsQueueIndex = i;
+                computeQueueIndex = i;
                 break;
             }
         }
     }
 
-    
-
     float priorities[] = {1.0f};
     VkDeviceQueueCreateInfo queueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-    queueCreateInfo.queueFamilyIndex = graphicsQueueIndex;
+    queueCreateInfo.queueFamilyIndex = computeQueueIndex;
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = priorities;
     
@@ -118,8 +117,8 @@ bool createLogicalDevice(VulkanContext* context, uint32_t deviceExtensionCount, 
     }
 
     //acquire queues:
-    context->computeQueue.familyIndex = graphicsQueueIndex;
-    vkGetDeviceQueue(context->device, graphicsQueueIndex, 0, &context->computeQueue.queue);
+    context->computeQueue.familyIndex = computeQueueIndex;
+    vkGetDeviceQueue(context->device, computeQueueIndex, 0, &context->computeQueue.queue);
 
     return true;
 }
