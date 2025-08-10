@@ -10,6 +10,11 @@ struct VulkanQueue {
     uint32_t familyIndex;
 };
 
+struct VulkanBuffer {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+};
+
 struct VulkanDescriptorSet {
     uint32_t layoutCount;
     std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
@@ -37,6 +42,10 @@ void exitVulkan(VulkanContext* context);
 
 VkRenderPass createRenderPass(VulkanContext* context, VkFormat format);
 void destroyRenderPass(VulkanContext* context, VkRenderPass renderPass);
+
+void createBuffer(VulkanContext* context, VulkanBuffer* buffer, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties);
+void uploadDataToBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* buffer, void* data, size_t size);
+void destroyBuffer(VulkanContext* context, VulkanBuffer* buffer);
 
 VulkanDescriptorSet* initDescriptorSet();
 void addDescriptorSetLayout(VulkanDescriptorSet* descriptorSet, VkDescriptorType descriptorType);

@@ -7,6 +7,7 @@
 VulkanContext* context;
 VulkanDescriptorSet* descriptorSetInfo;
 VulkanPipeline pipeline;
+VulkanBuffer myBuffer;
 
 
 void initApplication() {
@@ -39,14 +40,28 @@ void initApplication() {
 
     pipeline = createPipeline(context, computeShaders, descriptorSetInfo);
 
-    // fillDescriptorSet(context, descriptorSetInfo, ...);
+    int myData[] = {1, 2, 3, 4, 5};
 
+    createBuffer(context, &myBuffer, sizeof(myData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    uploadDataToBufferWithStagingBuffer(context, &myBuffer, myData, sizeof(myData));
+    
 
+    VkDescriptorBufferInfo myBufferInfo = {};
+    myBufferInfo.buffer = myBuffer.buffer;
+    myBufferInfo.offset = 0;
+    myBufferInfo.range = sizeof(myData);
+
+    std::vector<void*> allBuffers = {
+        &myBufferInfo,
+    };
+    
+    fillDescriptorSet(context, descriptorSetInfo, allBuffers);
 }
 
 void shutdownApplication() {
     vkDeviceWaitIdle(context->device);
     
+    destroyBuffer(context, &myBuffer);
     destroyPipeline(context, &pipeline);
     destroyDescriptorSet(context, descriptorSetInfo);
     
