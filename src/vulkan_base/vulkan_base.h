@@ -40,9 +40,6 @@ struct VulkanContext {
 VulkanContext* initVulkan(uint32_t extensionCount, const char** extensions, uint32_t deviceExtensionCount, const char** deviceExtensions);
 void exitVulkan(VulkanContext* context);
 
-VkRenderPass createRenderPass(VulkanContext* context, VkFormat format);
-void destroyRenderPass(VulkanContext* context, VkRenderPass renderPass);
-
 void createBuffer(VulkanContext* context, VulkanBuffer* buffer, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties);
 void uploadDataToBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* buffer, void* data, size_t size);
 void getDataFromBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* buffer, void* data, size_t size);
