@@ -31,6 +31,7 @@ void initApplication() {
     };
     uint32_t deviceExtensionsCount = ARRAY_COUNT(deviceExtensions);
 
+    // get device
     context = initVulkan(
         instanceExtensionsCount,
         instanceExtensions, 
@@ -44,16 +45,6 @@ void initApplication() {
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     createDescriptorSet(context, descriptorSetInfo);
-
-    // create Pipeline
-    std::vector<const char*> computeShaders;
-    computeShaders.push_back("../shaders/test1.spv");
-    computeShaders.push_back("../shaders/test2.spv");
-    std::vector<ivec3> dispatches = {
-        ivec3{5, 1, 1},
-        ivec3{1, 1, 1},
-    };
-    pipeline = createPipeline(context, computeShaders, dispatches, descriptorSetInfo);
 
     // Filling descriptorsets with Buffers
     descriptorSetInfo->addBufferAndData(
@@ -73,8 +64,17 @@ void initApplication() {
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
-
     fillDescriptorSet(context, descriptorSetInfo);
+
+    // create Pipeline
+    std::vector<const char*> computeShaders;
+    computeShaders.push_back("../shaders/test1.spv");
+    computeShaders.push_back("../shaders/test2.spv");
+    std::vector<ivec3> dispatches = {
+        ivec3{5, 1, 1},
+        ivec3{1, 1, 1},
+    };
+    pipeline = createPipeline(context, computeShaders, dispatches, descriptorSetInfo);
 }
 
 void shutdownApplication() {
@@ -116,7 +116,6 @@ void runApplication() {
         0
     );
 
-
     for (int i = 0; i < pipeline.pipelines.size(); ++i) {
         vkCmdBindPipeline(
             commandBuffer, 
@@ -140,7 +139,6 @@ void runApplication() {
                 0, nullptr
             );
         }
-
     }
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
