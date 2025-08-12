@@ -11,6 +11,7 @@ VulkanDescriptorSet* descriptorSetInfo;
 VulkanPipeline pipeline;
 VkCommandPool commandPool;
 VulkanBuffer ioBuffer;
+VulkanBuffer firstTempBuffer;
 float myData[] = {1, 2, 3.5, 4, 5};
 
 void initApplication() {
@@ -37,6 +38,7 @@ void initApplication() {
     descriptorSetInfo = initDescriptorSet();
 
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     createDescriptorSet(context, descriptorSetInfo);
 
     std::vector<const char*> computeShaders;
@@ -58,13 +60,27 @@ void initApplication() {
     );
     uploadDataToBufferWithStagingBuffer(context, &ioBuffer, myData, sizeof(myData));
 
-    VkDescriptorBufferInfo myBufferInfo = {};
-    myBufferInfo.buffer = ioBuffer.buffer;
-    myBufferInfo.offset = 0;
-    myBufferInfo.range = sizeof(myData);
+    createBuffer(
+        context,
+        &firstTempBuffer,
+        sizeof(float) * 10,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+
+    VkDescriptorBufferInfo ioBufferInfo = {};
+    ioBufferInfo.buffer = ioBuffer.buffer;
+    ioBufferInfo.offset = 0;
+    ioBufferInfo.range = sizeof(myData);
+
+    VkDescriptorBufferInfo firstTempBufferInfo = {};
+    firstTempBufferInfo.buffer = firstTempBuffer.buffer;
+    firstTempBufferInfo.offset = 0;
+    firstTempBufferInfo.range = sizeof(float) * 10;
 
     std::vector<void*> allBuffers = {
-        &myBufferInfo,
+        &ioBufferInfo,
+        &firstTempBufferInfo,
     };
     
     fillDescriptorSet(context, descriptorSetInfo, allBuffers);
@@ -74,6 +90,7 @@ void shutdownApplication() {
     vkDeviceWaitIdle(context->device);
     
     vkDestroyCommandPool(context->device, commandPool, 0);
+    destroyBuffer(context, &firstTempBuffer);
     destroyBuffer(context, &ioBuffer);
     destroyPipeline(context, &pipeline);
     destroyDescriptorSet(context, descriptorSetInfo);
@@ -149,13 +166,15 @@ void runApplication() {
 
     vkQueueWaitIdle(context->computeQueue.queue);
 
+    // data retrieval after each iteration
     float data[5];
     getDataFromBufferWithStagingBuffer(context, &ioBuffer, data, sizeof(myData));
 
-    for (int i = 0; i < 5; i++) {
-        std::cout << data[i] << ", ";
+    std::cout << "[" << data[0];
+    for (int i = 1; i < 5; i++) {
+        std::cout<< ", " << data[i];
     }
-    std::cout << std::endl;
+    std::cout << "]" << std::endl;
 
     vkFreeCommandBuffers(context->device, commandPool, 1, &commandBuffer);
 }
