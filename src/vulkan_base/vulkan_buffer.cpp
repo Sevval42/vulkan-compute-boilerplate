@@ -102,6 +102,29 @@ void uploadDataToBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* b
     vkFreeMemory(context->device, stagingBuffer.memory, 0);
 }
 
+void getDataFromBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* buffer, void* data, size_t size) {
+    VulkanBuffer stagingBuffer;
+    createBuffer(
+        context, 
+        &stagingBuffer, 
+        size, 
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+
+    void* mapped;
+    
+
+    copyBuffer(context, buffer, &stagingBuffer, size);
+
+    vkMapMemory(context->device, stagingBuffer.memory, 0, size, 0, &mapped);
+    memcpy(data, mapped, size);
+    vkUnmapMemory(context->device, stagingBuffer.memory);
+
+    vkDestroyBuffer(context->device, stagingBuffer.buffer, 0);
+    vkFreeMemory(context->device, stagingBuffer.memory, 0);
+}
+
 void destroyBuffer(VulkanContext* context, VulkanBuffer* buffer) {
     vkDestroyBuffer(context->device, buffer->buffer, 0);
     vkFreeMemory(context->device, buffer->memory, 0);

@@ -8,7 +8,7 @@ VulkanContext* context;
 VulkanDescriptorSet* descriptorSetInfo;
 VulkanPipeline pipeline;
 VulkanBuffer myBuffer;
-
+int myData[] = {1, 2, 3, 4, 5};
 
 void initApplication() {
 
@@ -40,11 +40,14 @@ void initApplication() {
 
     pipeline = createPipeline(context, computeShaders, descriptorSetInfo);
 
-    int myData[] = {1, 2, 3, 4, 5};
-
-    createBuffer(context, &myBuffer, sizeof(myData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    createBuffer(
+        context, 
+        &myBuffer, 
+        sizeof(myData), 
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT , 
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
     uploadDataToBufferWithStagingBuffer(context, &myBuffer, myData, sizeof(myData));
-    
 
     VkDescriptorBufferInfo myBufferInfo = {};
     myBufferInfo.buffer = myBuffer.buffer;
@@ -68,10 +71,82 @@ void shutdownApplication() {
     exitVulkan(context);
 }
 
+void runApplication() {
+    VkCommandPool commandPool;
+    {
+        VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+        createInfo.queueFamilyIndex = context->computeQueue.familyIndex;
+        if (vkCreateCommandPool(context->device, &createInfo, 0, &commandPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create command pool for running shaders");
+        }
+    }
+
+    VkCommandBuffer commandBuffer;
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = commandPool;
+        allocInfo.commandBufferCount = 1;
+        if (vkAllocateCommandBuffers(context->device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate command buffer");
+        }
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    vkCmdBindPipeline(
+        commandBuffer, 
+        VK_PIPELINE_BIND_POINT_COMPUTE, 
+        pipeline.pipelines.front()
+    );
+
+    vkCmdBindDescriptorSets(
+        commandBuffer, 
+        VK_PIPELINE_BIND_POINT_COMPUTE, 
+        pipeline.pipelineLayout, 
+        0, 
+        1, 
+        &descriptorSetInfo->descriptorSet, 
+        0, 
+        0
+    );
+
+    vkCmdDispatch(commandBuffer, 5, 1, 1);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+
+    VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    if (vkQueueSubmit(context->computeQueue.queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit compute command buffer!");
+    }
+
+    vkQueueWaitIdle(context->computeQueue.queue);
+
+    int data[5];
+    getDataFromBufferWithStagingBuffer(context, &myBuffer, data, sizeof(myData));
+
+    for (int i = 0; i < 5; i++) {
+        std::cout << data[i] << ", ";
+    }
+    std::cout << std::endl;
+
+    vkFreeCommandBuffers(context->device, commandPool, 1, &commandBuffer);
+    vkDestroyCommandPool(context->device, commandPool, 0);
+
+}
+
 
 int main(int argc, char* argv[]) {
     initApplication();
     std::cout << "Hello World" << std::endl;
+    runApplication();
     shutdownApplication();
     return 1;
 }
