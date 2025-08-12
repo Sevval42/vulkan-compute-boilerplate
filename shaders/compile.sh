@@ -1,2 +1,3 @@
 #glslang -V -S vert triangle_vert.glsl -o triangle_vert.spv
-glslang -V -S comp test.glsl -o test.spv
+glslang -V -S comp test1.glsl -o test1.spv
+glslang -V -S comp test2.glsl -o test2.spv

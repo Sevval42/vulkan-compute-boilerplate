@@ -4,11 +4,14 @@
 #include "vulkan/vulkan_core.h"
 #include "vulkan_base/vulkan_base.h"
 
+#define ITERATIONS 5
+
 VulkanContext* context;
 VulkanDescriptorSet* descriptorSetInfo;
 VulkanPipeline pipeline;
-VulkanBuffer myBuffer;
-int myData[] = {1, 2, 3, 4, 5};
+VkCommandPool commandPool;
+VulkanBuffer ioBuffer;
+float myData[] = {1, 2, 3.5, 4, 5};
 
 void initApplication() {
 
@@ -30,27 +33,33 @@ void initApplication() {
         deviceExtensions
     );
 
+    // creating descriptorsets
     descriptorSetInfo = initDescriptorSet();
 
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     createDescriptorSet(context, descriptorSetInfo);
 
     std::vector<const char*> computeShaders;
-    computeShaders.push_back("../shaders/test.spv");
+    computeShaders.push_back("../shaders/test1.spv");
+    computeShaders.push_back("../shaders/test2.spv");
+    std::vector<ivec3> dispatches = {
+        ivec3{5, 1, 1},
+        ivec3{1, 1, 1},
+    };
+    pipeline = createPipeline(context, computeShaders, dispatches, descriptorSetInfo);
 
-    pipeline = createPipeline(context, computeShaders, descriptorSetInfo);
-
+    // Filling descriptorsets with Buffers
     createBuffer(
         context, 
-        &myBuffer, 
+        &ioBuffer, 
         sizeof(myData), 
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT , 
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
-    uploadDataToBufferWithStagingBuffer(context, &myBuffer, myData, sizeof(myData));
+    uploadDataToBufferWithStagingBuffer(context, &ioBuffer, myData, sizeof(myData));
 
     VkDescriptorBufferInfo myBufferInfo = {};
-    myBufferInfo.buffer = myBuffer.buffer;
+    myBufferInfo.buffer = ioBuffer.buffer;
     myBufferInfo.offset = 0;
     myBufferInfo.range = sizeof(myData);
 
@@ -64,7 +73,8 @@ void initApplication() {
 void shutdownApplication() {
     vkDeviceWaitIdle(context->device);
     
-    destroyBuffer(context, &myBuffer);
+    vkDestroyCommandPool(context->device, commandPool, 0);
+    destroyBuffer(context, &ioBuffer);
     destroyPipeline(context, &pipeline);
     destroyDescriptorSet(context, descriptorSetInfo);
     
@@ -72,15 +82,6 @@ void shutdownApplication() {
 }
 
 void runApplication() {
-    VkCommandPool commandPool;
-    {
-        VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-        createInfo.queueFamilyIndex = context->computeQueue.familyIndex;
-        if (vkCreateCommandPool(context->device, &createInfo, 0, &commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create command pool for running shaders");
-        }
-    }
-
     VkCommandBuffer commandBuffer;
     {
         VkCommandBufferAllocateInfo allocInfo{};
@@ -96,12 +97,6 @@ void runApplication() {
     VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-    vkCmdBindPipeline(
-        commandBuffer, 
-        VK_PIPELINE_BIND_POINT_COMPUTE, 
-        pipeline.pipelines.front()
-    );
-
     vkCmdBindDescriptorSets(
         commandBuffer, 
         VK_PIPELINE_BIND_POINT_COMPUTE, 
@@ -113,7 +108,32 @@ void runApplication() {
         0
     );
 
-    vkCmdDispatch(commandBuffer, 5, 1, 1);
+
+    for (int i = 0; i < pipeline.pipelines.size(); ++i) {
+        vkCmdBindPipeline(
+            commandBuffer, 
+            VK_PIPELINE_BIND_POINT_COMPUTE, 
+            pipeline.pipelines[i]
+        );
+
+        ivec3 dispatchSize = pipeline.dispatchSizes[i];
+        vkCmdDispatch(commandBuffer, dispatchSize.x, dispatchSize.y, dispatchSize.z);
+        {
+            VkMemoryBarrier barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+            barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            vkCmdPipelineBarrier(
+                commandBuffer,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                0,
+                1, &barrier,
+                0, nullptr,
+                0, nullptr
+            );
+        }
+
+    }
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
@@ -129,8 +149,8 @@ void runApplication() {
 
     vkQueueWaitIdle(context->computeQueue.queue);
 
-    int data[5];
-    getDataFromBufferWithStagingBuffer(context, &myBuffer, data, sizeof(myData));
+    float data[5];
+    getDataFromBufferWithStagingBuffer(context, &ioBuffer, data, sizeof(myData));
 
     for (int i = 0; i < 5; i++) {
         std::cout << data[i] << ", ";
@@ -138,15 +158,22 @@ void runApplication() {
     std::cout << std::endl;
 
     vkFreeCommandBuffers(context->device, commandPool, 1, &commandBuffer);
-    vkDestroyCommandPool(context->device, commandPool, 0);
-
 }
 
 
 int main(int argc, char* argv[]) {
     initApplication();
-    std::cout << "Hello World" << std::endl;
-    runApplication();
+
+    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    createInfo.queueFamilyIndex = context->computeQueue.familyIndex;
+    if (vkCreateCommandPool(context->device, &createInfo, 0, &commandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool for running shaders");
+    }
+
+    for (int i = 0; i < ITERATIONS; ++i) {
+        runApplication();
+    }
+
     shutdownApplication();
     return 1;
 }

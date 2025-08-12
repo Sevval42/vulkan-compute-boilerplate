@@ -5,6 +5,12 @@
 
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]));
 
+struct ivec3 {
+    int x;
+    int y;
+    int z;
+};
+
 struct VulkanQueue {
     VkQueue queue;
     uint32_t familyIndex;
@@ -26,6 +32,7 @@ struct VulkanDescriptorSet {
 
 struct VulkanPipeline {
     std::vector<VkPipeline> pipelines;
+    std::vector<ivec3> dispatchSizes;
     VkPipelineLayout pipelineLayout;
 };
 
@@ -51,5 +58,5 @@ void createDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptor
 void fillDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptorSet, std::vector<void*>& buffers);
 void destroyDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptorSet);
 
-VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> computeShaderFilenames, VulkanDescriptorSet* descriptorSet);
+VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> computeShaderFilenames, std::vector<ivec3> dispatches, VulkanDescriptorSet* descriptorSet);
 void destroyPipeline(VulkanContext* context, VulkanPipeline* pipeline);

@@ -31,8 +31,7 @@ VkShaderModule createShaderModule(VulkanContext* context, const char* shaderFile
 
 
 
-VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> computeShaderFilenames, VulkanDescriptorSet* descriptorSet) {
-    
+VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> computeShaderFilenames, std::vector<ivec3> dispatches, VulkanDescriptorSet* descriptorSet) {
     VkPipelineLayout pipelineLayout;
     {
         VkPipelineLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -67,6 +66,7 @@ VulkanPipeline createPipeline(VulkanContext* context, std::vector<const char*> c
     VulkanPipeline result = {};
     result.pipelines = pipelines;
     result.pipelineLayout = pipelineLayout;
+    result.dispatchSizes = dispatches;
 
     return result;
 }
