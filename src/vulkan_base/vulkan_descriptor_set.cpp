@@ -1,5 +1,6 @@
 #include "vulkan/vulkan_core.h"
 #include "vulkan_base.h"
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 
@@ -59,8 +60,8 @@ void createDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptor
     }
 }
 
-void fillDescriptorSet(VulkanContext *context, VulkanDescriptorSet *descriptorSet, std::vector<void *> &buffers) {
-    if(descriptorSet->layoutCount != buffers.size()) {
+void fillDescriptorSet(VulkanContext *context, VulkanDescriptorSet *descriptorSet) {
+    if(descriptorSet->layoutCount != descriptorSet->buffers.size()) {
         throw std::runtime_error("incorrect count of given buffers, must match the DescriptorSetLayoutBindings!");
     }
 
@@ -77,12 +78,18 @@ void fillDescriptorSet(VulkanContext *context, VulkanDescriptorSet *descriptorSe
         switch (descriptorSet->descriptorSetLayoutBindings[i].descriptorType) {
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
             case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-                writes[i].pBufferInfo = static_cast<VkDescriptorBufferInfo*>(buffers[i]);
+                if (descriptorSet->buffers[i].type != VulkanDescriptorBufferInfo::Type::BUFFER) {
+                    throw std::runtime_error("Invalid descriptor type while filling descriptorset with data");
+                }
+                writes[i].pBufferInfo = &descriptorSet->buffers[i].bufferInfo;
                 break;
             case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-                writes[i].pImageInfo = static_cast<VkDescriptorImageInfo*>(buffers[i]);
+                if (descriptorSet->buffers[i].type != VulkanDescriptorBufferInfo::Type::IMAGE) {
+                        throw std::runtime_error("Invalid descriptor type while filling descriptorset with data");
+                }
+                writes[i].pImageInfo = &descriptorSet->buffers[i].imageInfo;
                 break;
             default:
                 throw std::runtime_error("Invalid descriptor type while filling descriptorset with data");
@@ -96,4 +103,28 @@ void fillDescriptorSet(VulkanContext *context, VulkanDescriptorSet *descriptorSe
 void destroyDescriptorSet(VulkanContext *context, VulkanDescriptorSet *descriptorSet) {
     vkDestroyDescriptorPool(context->device, descriptorSet->descriptorPool, 0);
     vkDestroyDescriptorSetLayout(context->device, descriptorSet->descriptorSetLayout, 0);
+}
+
+void VulkanDescriptorSet::addBufferAndData(VulkanContext* context, VulkanBuffer* buffer, void* data, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties) {
+    createBuffer(
+        context, 
+        buffer, 
+        size, 
+        usage, 
+        memoryProperties
+    );
+    if (data != NULL) {
+        uploadDataToBufferWithStagingBuffer(context, buffer, data, size);
+    }
+
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = buffer->buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = size;
+
+    VulkanDescriptorBufferInfo info{};
+    info.bufferInfo = bufferInfo;
+    info.type = VulkanDescriptorBufferInfo::Type::BUFFER;
+
+    this->buffers.push_back(info);
 }

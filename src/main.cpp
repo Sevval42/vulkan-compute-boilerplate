@@ -12,7 +12,11 @@ VulkanPipeline pipeline;
 VkCommandPool commandPool;
 VulkanBuffer ioBuffer;
 VulkanBuffer firstTempBuffer;
-float myData[] = {1, 2, 3.5, 4, 5};
+float myData[] = {1, 2, 3, 4, 5};
+
+struct UniformData {
+    float offset = 4;
+}uniformData;
 
 void initApplication() {
 
@@ -38,9 +42,10 @@ void initApplication() {
     descriptorSetInfo = initDescriptorSet();
 
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     createDescriptorSet(context, descriptorSetInfo);
 
+    // create Pipeline
     std::vector<const char*> computeShaders;
     computeShaders.push_back("../shaders/test1.spv");
     computeShaders.push_back("../shaders/test2.spv");
@@ -51,39 +56,25 @@ void initApplication() {
     pipeline = createPipeline(context, computeShaders, dispatches, descriptorSetInfo);
 
     // Filling descriptorsets with Buffers
-    createBuffer(
+    descriptorSetInfo->addBufferAndData(
         context, 
         &ioBuffer, 
+        myData,
         sizeof(myData), 
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT , 
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
-    uploadDataToBufferWithStagingBuffer(context, &ioBuffer, myData, sizeof(myData));
 
-    createBuffer(
+    descriptorSetInfo->addBufferAndData(
         context,
         &firstTempBuffer,
-        sizeof(float) * 10,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        &uniformData,
+        sizeof(uniformData),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    VkDescriptorBufferInfo ioBufferInfo = {};
-    ioBufferInfo.buffer = ioBuffer.buffer;
-    ioBufferInfo.offset = 0;
-    ioBufferInfo.range = sizeof(myData);
-
-    VkDescriptorBufferInfo firstTempBufferInfo = {};
-    firstTempBufferInfo.buffer = firstTempBuffer.buffer;
-    firstTempBufferInfo.offset = 0;
-    firstTempBufferInfo.range = sizeof(float) * 10;
-
-    std::vector<void*> allBuffers = {
-        &ioBufferInfo,
-        &firstTempBufferInfo,
-    };
-    
-    fillDescriptorSet(context, descriptorSetInfo, allBuffers);
+    fillDescriptorSet(context, descriptorSetInfo);
 }
 
 void shutdownApplication() {
@@ -196,4 +187,3 @@ int main(int argc, char* argv[]) {
     shutdownApplication();
     return 1;
 }
-

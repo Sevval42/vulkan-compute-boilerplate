@@ -4,12 +4,12 @@ layout(set = 0, binding = 0) buffer InputOutputBuffer {
     float data[];
 } bufferData;
 
-layout(set = 0, binding = 1) buffer FirstTempBuffer {
-    float data[];
-} tempBuffer;
+layout(set = 0, binding = 1) uniform UniformBuffer {
+    float offset;
+} uniformBuffer;
 
 layout(local_size_x = 5) in;
 void main() {
     uint idx = gl_GlobalInvocationID.x;
-    bufferData.data[idx] += tempBuffer.data[idx];
+    bufferData.data[idx] += uniformBuffer.offset;
 }

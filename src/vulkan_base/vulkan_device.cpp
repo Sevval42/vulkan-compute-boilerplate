@@ -2,6 +2,8 @@
 #include "vulkan_base.h"
 #include <iostream>
 
+#define DEBUGGING true
+
 bool initVulkanInstance(VulkanContext* context, uint32_t extensionCount, const char**  extensions) {
     uint32_t layerPropertyCount;
     vkEnumerateInstanceLayerProperties(&layerPropertyCount, 0);
@@ -16,7 +18,9 @@ bool initVulkanInstance(VulkanContext* context, uint32_t extensionCount, const c
     delete[] layerProperties;
 
     const char* enabledLayers[] = {
+    #if DEBUGGING
         "VK_LAYER_KHRONOS_validation",
+    #endif
     };
 
     uint32_t extensionPropertyCount;
