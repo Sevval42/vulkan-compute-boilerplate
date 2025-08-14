@@ -21,13 +21,17 @@ struct UniformData {
 void initApplication() {
 
     const char* instanceExtensions[] = {
+        #ifdef __APPLE__
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
         VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+        #endif
     };
     uint32_t instanceExtensionsCount = ARRAY_COUNT(instanceExtensions);
 
     const char* deviceExtensions[] = {
+        #ifdef __APPLE__
         VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+        #endif
     };
     uint32_t deviceExtensionsCount = ARRAY_COUNT(deviceExtensions);
 

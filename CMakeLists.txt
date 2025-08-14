@@ -35,7 +35,6 @@ endif(UNIX)
 
 add_executable(vulkan_compute_boilerplate ${SOURCE_FILES})
 
-target_include_directories(vulkan_compute_boilerplate PUBLIC ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(vulkan_compute_boilerplate PUBLIC ${Vulkan_LIBRARIES})
+target_link_libraries(vulkan_compute_boilerplate PUBLIC Vulkan::Vulkan)
 
 target_include_directories(vulkan_compute_boilerplate PRIVATE ${stb_SOURCE_DIR})
