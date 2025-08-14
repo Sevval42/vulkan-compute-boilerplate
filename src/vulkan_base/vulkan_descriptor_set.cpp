@@ -34,7 +34,6 @@ void createDescriptorSet(VulkanContext* context, VulkanDescriptorSet* descriptor
     }
 
     std::vector<VkDescriptorPoolSize> poolSizes;
-    uint32_t i = 0;
     for(auto typeCount : descriptorSet->descriptorTypeCount){
         poolSizes.push_back({typeCount.first, typeCount.second}); 
         // descriptorCount Needs to be multiplied by the count of Descriptorsets (in my case, its 1 anyways)
