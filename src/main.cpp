@@ -3,6 +3,10 @@
 #include <vulkan/vulkan_beta.h>
 #include "vulkan/vulkan_core.h"
 #include "vulkan_base/vulkan_base.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #define ITERATIONS 5
 
@@ -12,6 +16,7 @@ VulkanPipeline pipeline;
 VkCommandPool commandPool;
 VulkanBuffer ioBuffer;
 VulkanBuffer firstTempBuffer;
+VulkanImage imageBuffer;
 float myData[] = {1, 2, 3, 4, 5};
 
 struct UniformData {
@@ -48,6 +53,7 @@ void initApplication() {
 
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     createDescriptorSet(context, descriptorSetInfo);
 
     // Filling descriptorsets with Buffers
@@ -66,6 +72,27 @@ void initApplication() {
         &uniformData,
         sizeof(uniformData),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+
+    int width, height, channels;
+    // load image using stb
+    float* pixels = stbi_loadf(
+        "../images/image.png", 
+        &width,
+        &height,
+        &channels,
+        STBI_rgb_alpha
+    );
+
+    int imageSize = width * height * 4;
+
+    descriptorSetInfo->addImageAndData(
+        context, 
+        &imageBuffer, 
+        pixels, width, height, 1, 
+        VK_FORMAT_R8G8B8A8_UNORM, 
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
     fillDescriptorSet(context, descriptorSetInfo);

@@ -4,6 +4,8 @@ build
 *.bin
 .DS_Store
 .cache
+images
+images/*
 
 # CMake
 CMakeLists.txt.user
