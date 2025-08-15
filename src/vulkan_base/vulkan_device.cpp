@@ -2,7 +2,7 @@
 #include "vulkan_base.h"
 #include <iostream>
 
-#define DEBUGGING true
+#define DEBUGGING false
 
 bool initVulkanInstance(VulkanContext* context, uint32_t extensionCount, const char**  extensions) {
     uint32_t layerPropertyCount;
@@ -142,10 +142,19 @@ VulkanContext* initVulkan(uint32_t extensionCount, const char** extensions, uint
         return 0;
     }
 
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = context->computeQueue.familyIndex;
+    if (vkCreateCommandPool(context->device, &poolInfo, nullptr, &context->commandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+
     return context;
 }
 
 void exitVulkan(VulkanContext* context) {
+    vkDestroyCommandPool(context->device, context->commandPool, 0);
     vkDeviceWaitIdle(context->device);
     vkDestroyDevice(context->device, 0);
     vkDestroyInstance(context->instance, 0);

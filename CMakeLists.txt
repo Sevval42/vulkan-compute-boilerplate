@@ -12,6 +12,8 @@ set(SOURCE_FILES
     src/vulkan_base/vulkan_pipeline.cpp
     src/vulkan_base/vulkan_descriptor_set.cpp
     src/vulkan_base/vulkan_buffer.cpp
+    src/vulkan_base/vulkan_image.cpp
+    src/vulkan_base/vulkan_helper.cpp
 )
 
 include(FetchContent)

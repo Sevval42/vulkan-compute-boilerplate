@@ -127,3 +127,35 @@ void VulkanDescriptorSet::addBufferAndData(VulkanContext* context, VulkanBuffer*
 
     this->buffers.push_back(info);
 }
+
+void VulkanDescriptorSet::addImageAndData(
+        VulkanContext* context, 
+        VulkanImage* image, void* data,
+        uint32_t width, uint32_t height, uint32_t depth, 
+        VkFormat format, 
+        VkImageUsageFlags usage, 
+        VkMemoryPropertyFlags memoryProperties
+    ) {
+    createImage(
+        context,
+        image,
+        width, height, depth,
+        format,
+        usage,
+        memoryProperties
+    );
+
+    if (data != NULL) {
+        uploadDataToImageWithStagingBuffer(context, image, data, width * height * depth * sizeof(float));
+    }
+
+    VkDescriptorImageInfo imageInfo = {};
+    imageInfo.imageLayout = image->currentLayout;
+    imageInfo.imageView = image->view;
+
+    VulkanDescriptorBufferInfo info{};
+    info.imageInfo = imageInfo;
+    info.type = VulkanDescriptorBufferInfo::Type::IMAGE;
+
+    this->buffers.push_back(info);
+}
