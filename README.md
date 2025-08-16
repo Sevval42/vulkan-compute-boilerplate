@@ -7,7 +7,9 @@ Right now, uniform-, storage- and image-buffers are supported.
 - Vulkan SDK (latest version recommended)
 - CMake (3.10+)
 - GPU with Vulkan 1.2+ support
-- GLSLang compiler
+- shader compiler:
+    - glslang on mac
+    - glslc on windows
 
 ### Project structure
 The base of the project is the `vulkan_base.h` file, where all relevant structs and methods are defined. Implementations can be found in the according *.cpp files.

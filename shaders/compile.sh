@@ -9,6 +9,6 @@ for file in *.vert *.frag *.comp; do
     comp) stage="comp" ;;
     *) echo "Skipping $file"; continue ;;
   esac
-  echo "Compiling $file -> $name.spv"
+  echo "Compiling $file ..."
   glslangValidator -V -S "$stage" "$file" -o "$name.spv"
 done
