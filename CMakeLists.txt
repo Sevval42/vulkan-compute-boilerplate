@@ -29,11 +29,16 @@ FetchContent_MakeAvailable(stb)
 find_package(Vulkan REQUIRED)
 
 if (UNIX)
-add_custom_target(build_shaders ALL
-    COMMAND "${PROJECT_SOURCE_DIR}/shaders/compile.sh"
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/shaders"
+    add_custom_target(build_shaders ALL
+        COMMAND "${PROJECT_SOURCE_DIR}/shaders/compile.sh"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/shaders"
     )
-endif(UNIX)
+elseif(WIN32)
+    add_custom_target(build_shaders ALL
+        COMMAND "${PROJECT_SOURCE_DIR}/shaders/compile.bat"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/shaders"
+    )
+endif()
 
 add_executable(vulkan_compute_boilerplate ${SOURCE_FILES})
 
