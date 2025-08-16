@@ -34,11 +34,20 @@ One image is loaded ("images/image.png") and inverted. The output can be found i
 ### Building
 
 To run this project, execute the following commands in the project directory:
+#### Windows
 ```
-cmake --preset <windows or mac>
+cmake --preset windows
 cmake --build .\build\
 cd bin
 .\vulkan_compute_boilerplate.exe
+```
+
+#### MacOS
+```
+cmake --preset mac
+cmake --build build
+cd bin
+./vulkan_compute_boilerplate
 ```
 
 ### LICENSE
