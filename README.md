@@ -31,5 +31,15 @@ The `runApplication()` method does one iteration through the compute shaders in 
 More detail about the implementation can be found in the example code of the main.cpp file. It uses three shaders, one storagebuffer, uniformbuffer and imagebuffer, and prints the storagebuffer into the console after each iteration.
 One image is loaded ("images/image.png") and inverted. The output can be found in the bin directory.
 
+### Building
+
+To run this project, execute the following commands in the project directory:
+```
+cmake --preset <windows or mac>
+cmake --build .\build\
+cd bin
+.\vulkan_compute_boilerplate.exe
+```
+
 ### LICENSE
 MIT
