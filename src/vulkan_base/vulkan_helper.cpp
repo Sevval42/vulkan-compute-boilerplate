@@ -6,11 +6,8 @@ uint32_t findMemoryType(VulkanContext* context, uint32_t typeFilter, VkMemoryPro
 	vkGetPhysicalDeviceMemoryProperties(context->physicalDevice, &deviceMemoryProperties);
 
 	for (uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount; ++i) {
-		// Check if required memory type is allowed
 		if ((typeFilter & (1 << i)) != 0) {
-			// Check if required properties are satisfied
 			if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties) {
-				// Return this memory type index
 				return i;
 			}
 		}

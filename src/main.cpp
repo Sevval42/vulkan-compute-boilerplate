@@ -43,7 +43,7 @@ void initApplication() {
     };
     uint32_t deviceExtensionsCount = ARRAY_COUNT(deviceExtensions);
 
-    // get device
+    LOG("Get device");
     context = initVulkan(
         instanceExtensionsCount,
         instanceExtensions, 
@@ -190,11 +190,9 @@ void runApplication() {
 
     vkQueueWaitIdle(context->computeQueue.queue);
 
-    // data retrieval after each iteration
     float data[5];
     getDataFromBufferWithStagingBuffer(context, &ioBuffer, data, sizeof(myData));
 
-    
     std::cout << "[" << data[0];
     for (int i = 1; i < 5; i++) {
         std::cout<< ", " << data[i];
@@ -217,7 +215,6 @@ int main(int argc, char* argv[]) {
     if(!stbi_write_png("output.png", static_cast<int>(imageBuffer.extent.width), static_cast<int>(imageBuffer.extent.height), 4, outputPixels.data(), imageBuffer.extent.width*4)) {
         LOG_ERROR("Failed saving output image");
     }
-
 
     shutdownApplication();
     return 1;

@@ -120,7 +120,6 @@ bool createLogicalDevice(VulkanContext* context, uint32_t deviceExtensionCount, 
         return false;
     }
 
-    //acquire queues:
     context->computeQueue.familyIndex = computeQueueIndex;
     vkGetDeviceQueue(context->device, computeQueueIndex, 0, &context->computeQueue.queue);
 

@@ -110,7 +110,6 @@ void createImage(VulkanContext* context, VulkanImage* image, size_t size, uint32
         throw std::runtime_error("Failed to create image view!");
     }
 
-    // Layout:
     image->currentLayout = imageInfo.initialLayout;
 }
 
