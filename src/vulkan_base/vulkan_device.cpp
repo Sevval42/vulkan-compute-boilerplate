@@ -2,7 +2,7 @@
 #include "vulkan_base.h"
 #include <iostream>
 
-#define DEBUGGING false
+#define DEBUGGING true
 
 bool initVulkanInstance(VulkanContext* context, uint32_t extensionCount, const char**  extensions) {
     uint32_t layerPropertyCount;

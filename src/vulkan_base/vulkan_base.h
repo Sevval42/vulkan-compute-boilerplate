@@ -3,6 +3,18 @@
 #include <vector>
 #include <unordered_map>
 
+#define ENABLE_LOGGING 1
+
+#if ENABLE_LOGGING
+    #define LOG(msg) std::cout << "[LOG] " << msg << std::endl
+    #define LOG_WARN(msg) std::cout << "[WARN] " << msg << std::endl
+    #define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << std::endl
+#else
+    #define LOG(msg)
+    #define LOG_WARN(msg)
+    #define LOG_ERROR(msg)
+#endif
+
 #define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]));
 
 struct ivec3 {
@@ -36,6 +48,7 @@ struct VulkanImage {
     VkImageView view;
     VkImageLayout currentLayout;
     VkExtent3D extent;
+    size_t size;
 };
 
 struct VulkanDescriptorBufferInfo {
@@ -65,7 +78,7 @@ struct VulkanDescriptorSet {
 
     void addImageAndData(
         VulkanContext* context, 
-        VulkanImage* image, void* data,
+        VulkanImage* image, void* data, size_t size,
         uint32_t width, uint32_t height, uint32_t depth, 
         VkFormat format, 
         VkImageUsageFlags usage, 
@@ -95,10 +108,10 @@ void getDataFromBufferWithStagingBuffer(VulkanContext* context, VulkanBuffer* bu
 void destroyBuffer(VulkanContext* context, VulkanBuffer* buffer);
 
 // vulkan_image.cpp
-void createImage(VulkanContext* context, VulkanImage* image, uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties);
-void uploadDataToImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data, size_t size);
+void createImage(VulkanContext* context, VulkanImage* image, size_t size, uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties);
+void uploadDataToImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data);
 void transitionLayout(VulkanContext* context, VulkanImage* image, VkImageLayout newLayout, VkCommandBuffer commandBuffer);
-void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data, size_t size);
+void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data);
 void destroyImage(VulkanContext* context, VulkanImage* image);
 
 // vulkan_descriptor_set.cpp

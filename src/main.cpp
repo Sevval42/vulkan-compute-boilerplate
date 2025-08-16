@@ -1,4 +1,7 @@
+#include <cstdint>
+#include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_beta.h>
 #include "vulkan/vulkan_core.h"
@@ -8,15 +11,15 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#define ITERATIONS 5
+#define ITERATIONS 1
 
 VulkanContext* context;
 VulkanDescriptorSet* descriptorSetInfo;
 VulkanPipeline pipeline;
-VkCommandPool commandPool;
 VulkanBuffer ioBuffer;
 VulkanBuffer firstTempBuffer;
 VulkanImage imageBuffer;
+size_t imageSize;
 float myData[] = {1, 2, 3, 4, 5};
 
 struct UniformData {
@@ -48,7 +51,7 @@ void initApplication() {
         deviceExtensions
     );
 
-    // creating descriptorsets
+    LOG("Creating descriptor set");
     descriptorSetInfo = initDescriptorSet();
 
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -56,7 +59,8 @@ void initApplication() {
     addDescriptorSetLayout(descriptorSetInfo, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     createDescriptorSet(context, descriptorSetInfo);
 
-    // Filling descriptorsets with Buffers
+
+    LOG("Filling descriptorsets with Buffers");
     descriptorSetInfo->addBufferAndData(
         context, 
         &ioBuffer, 
@@ -75,35 +79,35 @@ void initApplication() {
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    int width, height, channels;
-    // load image using stb
-    float* pixels = stbi_loadf(
-        "../images/image.png", 
-        &width,
-        &height,
-        &channels,
-        STBI_rgb_alpha
-    );
-
-    int imageSize = width * height * 4;
+    int w,h,channels;
+    unsigned char* pixels = stbi_load("../images/image.png", &w, &h, &channels, STBI_rgb_alpha);
+    if (!pixels) {
+        throw std::runtime_error("Failed to load image");
+    }
+    imageSize = size_t(w) * h * channels;
 
     descriptorSetInfo->addImageAndData(
         context, 
-        &imageBuffer, 
-        pixels, width, height, 1, 
+        &imageBuffer, pixels, imageSize,
+        w, h, 1, 
         VK_FORMAT_R8G8B8A8_UNORM, 
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
+    stbi_image_free(pixels);
+
+    LOG("Load descriptor set");
     fillDescriptorSet(context, descriptorSetInfo);
 
-    // create Pipeline
+    LOG("Creating pipeline");
     std::vector<const char*> computeShaders;
     computeShaders.push_back("../shaders/test1.spv");
     computeShaders.push_back("../shaders/test2.spv");
+    computeShaders.push_back("../shaders/test3.spv");
     std::vector<ivec3> dispatches = {
         ivec3{5, 1, 1},
         ivec3{1, 1, 1},
+        ivec3{(int)w/16+1, (int)h/16+1, 1},
     };
     pipeline = createPipeline(context, computeShaders, dispatches, descriptorSetInfo);
 }
@@ -111,7 +115,7 @@ void initApplication() {
 void shutdownApplication() {
     vkDeviceWaitIdle(context->device);
     
-    vkDestroyCommandPool(context->device, commandPool, 0);
+    destroyImage(context, &imageBuffer);
     destroyBuffer(context, &firstTempBuffer);
     destroyBuffer(context, &ioBuffer);
     destroyPipeline(context, &pipeline);
@@ -126,7 +130,7 @@ void runApplication() {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
+        allocInfo.commandPool = context->commandPool;
         allocInfo.commandBufferCount = 1;
         if (vkAllocateCommandBuffers(context->device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate command buffer");
@@ -190,24 +194,25 @@ void runApplication() {
     float data[5];
     getDataFromBufferWithStagingBuffer(context, &ioBuffer, data, sizeof(myData));
 
+    std::vector<uint8_t> outputPixels(imageSize);
+    getDataFromImageWithStagingBuffer(context, &imageBuffer, outputPixels.data());
+
+    if(!stbi_write_png("output.png", static_cast<int>(imageBuffer.extent.width), static_cast<int>(imageBuffer.extent.height), 4, outputPixels.data(), imageBuffer.extent.width*4)) {
+        LOG_ERROR("Failed saving output image");
+    }
+
     std::cout << "[" << data[0];
     for (int i = 1; i < 5; i++) {
         std::cout<< ", " << data[i];
     }
     std::cout << "]" << std::endl;
 
-    vkFreeCommandBuffers(context->device, commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(context->device, context->commandPool, 1, &commandBuffer);
 }
 
 
 int main(int argc, char* argv[]) {
     initApplication();
-
-    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    createInfo.queueFamilyIndex = context->computeQueue.familyIndex;
-    if (vkCreateCommandPool(context->device, &createInfo, 0, &commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool for running shaders");
-    }
 
     for (int i = 0; i < ITERATIONS; ++i) {
         runApplication();

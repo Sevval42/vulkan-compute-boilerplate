@@ -2,7 +2,7 @@
 #include "vulkan_base.h"
 #include <stdexcept>
 
-void copyBufferToImage(VulkanContext* context, VulkanBuffer* buffer, VulkanImage* image, size_t size) {
+void copyBufferToImage(VulkanContext* context, VulkanBuffer* buffer, VulkanImage* image) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands(context);
     transitionLayout(context, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer);
 
@@ -59,7 +59,7 @@ void copyImageToBuffer(VulkanContext* context, VulkanImage* image, VulkanBuffer*
 }
 
 
-void createImage(VulkanContext* context, VulkanImage* image, uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties) {
+void createImage(VulkanContext* context, VulkanImage* image, size_t size, uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties) {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -75,6 +75,7 @@ void createImage(VulkanContext* context, VulkanImage* image, uint32_t width, uin
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image->extent = imageInfo.extent;
+    image->size = size;
 
     if (vkCreateImage(context->device, &imageInfo, nullptr, &image->image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
@@ -113,21 +114,21 @@ void createImage(VulkanContext* context, VulkanImage* image, uint32_t width, uin
     image->currentLayout = imageInfo.initialLayout;
 }
 
-void uploadDataToImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data, size_t size) {
+void uploadDataToImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data) {
     VulkanBuffer stagingBuffer;
     createBuffer(
         context, 
-        &stagingBuffer, size, 
+        &stagingBuffer, image->size, 
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
 
     void* mapped;
-    vkMapMemory(context->device, stagingBuffer.memory, 0, size, 0, &mapped);
-    memcpy(mapped, data, size);
+    vkMapMemory(context->device, stagingBuffer.memory, 0, image->size, 0, &mapped);
+    memcpy(mapped, data, image->size);
     vkUnmapMemory(context->device, stagingBuffer.memory);
 
-    copyBufferToImage(context, &stagingBuffer, image, size);
+    copyBufferToImage(context, &stagingBuffer, image);
 
     vkDestroyBuffer(context->device, stagingBuffer.buffer, 0);
     vkFreeMemory(context->device, stagingBuffer.memory, 0);
@@ -189,12 +190,12 @@ void transitionLayout(VulkanContext* context, VulkanImage* image, VkImageLayout 
     image->currentLayout = newLayout;
 }
 
-void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data, size_t size) {
+void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* image, void* data) {
     VulkanBuffer stagingBuffer;
     createBuffer(
         context,
         &stagingBuffer,
-        size,
+        image->size,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
@@ -202,8 +203,8 @@ void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* imag
     copyImageToBuffer(context, image, &stagingBuffer);
 
     void* mapped;
-    vkMapMemory(context->device, stagingBuffer.memory, 0, size, 0, &mapped);
-    memcpy(data, mapped, size);
+    vkMapMemory(context->device, stagingBuffer.memory, 0, image->size, 0, &mapped);
+    memcpy(data, mapped, image->size);
     vkUnmapMemory(context->device, stagingBuffer.memory);
 
     vkDestroyBuffer(context->device, stagingBuffer.buffer, nullptr);
@@ -211,6 +212,7 @@ void getDataFromImageWithStagingBuffer(VulkanContext* context, VulkanImage* imag
 }
 
 void destroyImage(VulkanContext* context, VulkanImage* image) {
+    vkDestroyImageView(context->device, image->view, 0);
     vkDestroyImage(context->device, image->image, 0);
     vkFreeMemory(context->device, image->memory, 0);
 }
