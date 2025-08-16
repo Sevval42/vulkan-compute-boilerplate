@@ -6,14 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-set(SOURCE_FILES 
-    src/main.cpp 
-    src/vulkan_base/vulkan_device.cpp
-    src/vulkan_base/vulkan_pipeline.cpp
-    src/vulkan_base/vulkan_descriptor_set.cpp
-    src/vulkan_base/vulkan_buffer.cpp
-    src/vulkan_base/vulkan_image.cpp
-    src/vulkan_base/vulkan_helper.cpp
+file(GLOB_RECURSE SOURCE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
 
 include(FetchContent)
