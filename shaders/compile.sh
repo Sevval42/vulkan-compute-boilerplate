@@ -1,4 +1,14 @@
-#glslang -V -S vert triangle_vert.glsl -o triangle_vert.spv
-glslang -V -S comp test1.glsl -o test1.spv
-glslang -V -S comp test2.glsl -o test2.spv
-glslang -V -S comp test3.glsl -o test3.spv
+#!/bin/bash
+for file in *.vert *.frag *.comp; do
+  [ -f "$file" ] || continue
+  name="${file%.*}"
+  ext="${file##*.}"
+  case "$ext" in
+    vert) stage="vert" ;;
+    frag) stage="frag" ;;
+    comp) stage="comp" ;;
+    *) echo "Skipping $file"; continue ;;
+  esac
+  echo "Compiling $file ..."
+  glslangValidator -V -S "$stage" "$file" -o "$name.spv"
+done
