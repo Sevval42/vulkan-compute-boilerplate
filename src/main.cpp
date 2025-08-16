@@ -31,8 +31,8 @@ void initApplication() {
     const char* instanceExtensions[] = {
         #ifdef __APPLE__
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
         #endif
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
     };
     uint32_t instanceExtensionsCount = ARRAY_COUNT(instanceExtensions);
 
@@ -194,13 +194,7 @@ void runApplication() {
     float data[5];
     getDataFromBufferWithStagingBuffer(context, &ioBuffer, data, sizeof(myData));
 
-    std::vector<uint8_t> outputPixels(imageSize);
-    getDataFromImageWithStagingBuffer(context, &imageBuffer, outputPixels.data());
-
-    if(!stbi_write_png("output.png", static_cast<int>(imageBuffer.extent.width), static_cast<int>(imageBuffer.extent.height), 4, outputPixels.data(), imageBuffer.extent.width*4)) {
-        LOG_ERROR("Failed saving output image");
-    }
-
+    
     std::cout << "[" << data[0];
     for (int i = 1; i < 5; i++) {
         std::cout<< ", " << data[i];
@@ -217,6 +211,13 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < ITERATIONS; ++i) {
         runApplication();
     }
+    std::vector<uint8_t> outputPixels(imageSize);
+    getDataFromImageWithStagingBuffer(context, &imageBuffer, outputPixels.data());
+
+    if(!stbi_write_png("output.png", static_cast<int>(imageBuffer.extent.width), static_cast<int>(imageBuffer.extent.height), 4, outputPixels.data(), imageBuffer.extent.width*4)) {
+        LOG_ERROR("Failed saving output image");
+    }
+
 
     shutdownApplication();
     return 1;
